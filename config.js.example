@@ -1,0 +1,12 @@
+{
+	"mysql": {
+		"host": "127.0.0.1",
+		"database": "instrument_thing",
+		"username": "instrument_thing",
+		"password": "this account can only be used by"
+	},
+	"redis": {
+		"host": "127.0.0.1",
+		"port": 6379
+	}
+}

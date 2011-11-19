@@ -1,0 +1,30 @@
+<p>Artist: <%= song.artist %></p>
+<p>Note: <%= song.note %></p>
+<p>Creator: <%= song.ownerName %></p>
+<p><a href="/songs/get/<%= song.id %>.mid">Listen Link</a></p>
+<p><a href="/songs/get/<%= song.id %>.sse">Download Link</a></p>
+<% if (song.processed) { %>
+	<p>BPM: <%= song.bpm %></p>
+	<p>
+		<table>
+			<tr>
+				<th>Track Number</th>
+				<th>Number of Notes</th>
+				<th>Track Name</th>
+				<th>Instrument Name</th>
+				<th>Track End (not sure how to interpret)</th>
+			</tr>
+			<% for (var i in song.tracks) { trk = song.tracks[i]; %>
+				<tr>
+					<td><%= trk.trk_no %></td>
+					<td><%= trk.notes %></td>
+					<td><%= trk.name %></td>
+					<td><%= trk.pr_name %></td>
+					<td><%= trk.trk_end %></td>
+				</tr>
+			<% } %>
+		</table>
+	</p>
+<% } else { /* TODO(jkoff): Replace with AJAXy progress bar? */ %>
+	<p>Song not yet processed.</p>
+<% } %>

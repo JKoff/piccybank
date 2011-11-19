@@ -1,0 +1,11 @@
+Setup instructions
+==================
+
+Install mysql.
+Install redis.
+Install npm dependencies.
+
+Make config.js from config.js.example
+Make migrate/config.js from migration/config.js.mine
+
+Run migrations by running cd migration; node migration.js migrate
