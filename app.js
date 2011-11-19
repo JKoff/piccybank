@@ -78,8 +78,8 @@ var mysql = require('mysql').createClient({
 	password: config.mysql.password,
 	database: config.mysql.database
 });
-var redis_global = require('redis');
-var redis = redis_global.createClient(config.redis.port, config.redis.host);
+/*var redis_global = require('redis');
+var redis = redis_global.createClient(config.redis.port, config.redis.host);*/
 
 function cachedLoadFileSync(path) {
 	return (fileCache[path] ||
