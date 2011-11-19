@@ -192,7 +192,7 @@ app.get('/songs/get/:id', function(req, res) {
 */app.get('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	renderPage({
-		title: 'Submit a new song!',
+		title: 'Record an item!',
 		content: render('/pages/new.html', {
 			csrf: csrf.token(req, res, function() {})
 		})
