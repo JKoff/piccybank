@@ -81,11 +81,15 @@ var mysql = require('mysql').createClient({
 /*var redis_global = require('redis');
 var redis = redis_global.createClient(config.redis.port, config.redis.host);*/
 
+function uncachedLoadFileSync(path) {
+	return fs.readFileSync(__dirname + path, 'utf8');
+}
 function cachedLoadFileSync(path) {
 	return (fileCache[path] ||
 			(fileCache[path] = fs.readFileSync(__dirname + path, 'utf8')));
 }
-var file = cachedLoadFileSync;
+/* TODO(jkoff): cachedLoadFileSync */
+var file = uncachedLoadFileSync;
 
 process.on('exit', onExit);
 
@@ -197,7 +201,7 @@ app.post('/new', function(req, res) {
 	var form = formidable.IncomingForm();
 	form.parse(req, function(err, fields, files) {
 		mysql.query(
-				'INSERT INTO images (userid, caption) VALUES (?, ?);',
+				'INSERT INTO items (userid, caption) VALUES (?, ?);',
 				[req.session.user.id, fields.caption],
 				function(err, info) {
 					if (err) throw err;
@@ -324,9 +328,12 @@ function mv(src, dest, next) {
 }
 
 function render(path, props) {
-	var compiled = (tmplCache[path] ||
+	/* TODO(jkoff): uncomment */
+	/*var compiled = (tmplCache[path] ||
 			(tmplCache[path] = _.template(file(path))));
-  return compiled(props);
+  return compiled(props);*/
+	var compiled = _.template(file(path));
+	return compiled(props);
 }
 
 function renderPage(props, req, res) {
