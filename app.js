@@ -21,9 +21,10 @@ everyauth.facebook
 		.moduleTimeout(60000)
 		.handleAuthCallbackError(function(req, res) {
 			console.log('Facebook auth error');
-			throw 'Facebook authentication error.';
+			//throw 'Facebook authentication error.';
 		})
 		.findOrCreateUser(function(sess, accessTok, accessTokExtra, fbUserMeta) {
+			console.log('Here');
 			var user = {
 				fbId: fbUserMeta.id,
 				firstName: fbUserMeta.first_name,
@@ -55,6 +56,7 @@ everyauth.facebook
 			res.redirect(getNextURL(req), 303);
 		})
 		.redirectPath('/return');
+everyauth.debug = true;
 
 var app = express.createServer();
 app.use(express.bodyParser());
@@ -91,6 +93,7 @@ function cachedLoadFileSync(path) {
 /* TODO(jkoff): cachedLoadFileSync */
 var file = uncachedLoadFileSync;
 
+//process.on('uncaughtException', function() {});
 process.on('exit', onExit);
 
 registerStatic('/style/:filename');
@@ -198,15 +201,24 @@ app.get('/songs/get/:id', function(req, res) {
 
 app.post('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
+	
 	var form = formidable.IncomingForm();
 	form.parse(req, function(err, fields, files) {
+		var perms = "private";
+		switch (fields.permissions) {
+		case "private":
+		case "public":
+			perms = fields.permissions;
+		};
 		mysql.query(
-				'INSERT INTO items (userid, caption) VALUES (?, ?);',
-				[req.session.user.id, fields.caption],
+				'INSERT INTO items (userid, caption, permissions) VALUES (?, ?, ?);',
+				[req.session.user.id, fields.caption, perms],
 				function(err, info) {
 					if (err) throw err;
 					var id = info.insertId;
 					var ext = /.*\.(.+)/.exec(files.upload.name)[1] || 'jpg';
+					mysql.query('UPDATE items SET imgurl=? WHERE id=?',
+											['/uploaded-images/' + id + '.'+ext, info.insertId]);
 					mv(files.upload.path, 'uploaded-images/' + id + '.'+ext, function() {
 						/*redis.publish('uploaded-midis', id, function(a, receivers) {
 							if (receivers < 1) {
@@ -214,12 +226,62 @@ app.post('/new', function(req, res) {
 							}
 						});*/  // redis.publish
 					});  // mv
-					res.redirect('/' + id);
+					res.redirect('/items/' + id);
 				});  // mysql cb
 	});  // form.parse
-});/*
+});
 
-app.get('/songs/search', function(req, res) {
+app.get('/items/:id', function(req, res) {
+	var id = req.params.id;
+	queryItem(id);
+	
+	function queryItem(id) {
+		mysql.query(
+				'SELECT * FROM items WHERE id=? LIMIT 1',
+				[id],
+				function(err, res, fields) {
+					if (err) throw err;
+					finishItem(res[0]);
+				});
+	}
+	function finishItem(item) {
+		renderPage({
+			caption: item.caption,
+			imgurl: item.imgurl,
+			title: 'Viewing ' + item.caption,
+			content: render('/pages/get.html', {
+				item: item
+			})
+		}, req, res);
+	}
+});
+
+app.get('/uploaded-images/:file', function(req, res) {
+	var file = req.params.file;
+	var id = /(.*)\..*/.exec(file)[1];
+	queryItem(id);
+	
+	function queryItem(id) {
+		mysql.query(
+				'SELECT * FROM items WHERE id=? LIMIT 1',
+				[id],
+				function(err, res, fields) {
+					if (err) throw err;
+					finishItem(res[0]);
+				});
+	}
+	function finishItem(item) {
+		if (item.permissions === 'private') {
+			if (!requireAuth(req, res)) return;
+			// TODO(jkoff): More user-friendly auth error.
+			if (req.session.user.id != item.userid) { authError(); return; }
+		}
+		
+		res.sendfile(__dirname + '/uploaded-images/' + file);
+	}
+});
+
+/*app.get('/songs/search', function(req, res) {
 	var terms = req.param('terms');
 	renderSongList(req, res, route, 0, getWhereClausesForSearch(terms));
 	function route(page) {
@@ -325,6 +387,10 @@ function mv(src, dest, next) {
 		next();
 		fs.unlink(src);
 	});
+}
+
+function authError() {
+	res.send('Not authorized.');
 }
 
 function render(path, props) {

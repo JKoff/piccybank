@@ -6,8 +6,15 @@
 	<input type="text" name="caption" id="caption" />
 	<br/>
 	
+	<label for="permissions">Permissions:</label>
+	<select name="permissions">
+		<option value="public">Public</option>
+		<option value="private">Private</option>
+	</select>
+	<br/>
+	
 	<input type="hidden" name="csrf" value="<%= csrf %>" />
 	<br/>
 	
-	<input type="submit" value="Submit song!" />
+	<input type="submit" value="Record item!" />
 </form>
