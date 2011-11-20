@@ -133,72 +133,26 @@ app.all('/accounts/login', function(req, res) {
 	//res.redirect(next);
 });
 
-/*app.get('/songs/', function(req, res) {
-	renderSongList(req, res, route, 0, '');
+app.get('/dashboard/', function(req, res) {
+	renderItemList(req, res, route, 0, '');
 	function route(page) {
-		if (page !== null) return '/songs/page/' + page;
-		else if (page === 0) return '/songs/';
+		if (page !== null) return '/dashboard/' + page;
+		else if (page === 0) return '/dashboard/';
 		else return null;
 	}
 });
 
-app.get('/songs/page/:id', function(req, res) {
+app.get('/dashboard/:id', function(req, res) {
 	var id = req.params.id;
-	renderSongList(req, res, route, id, '');
+	renderItemList(req, res, route, id, '');
 	function route(page) {
-		if (page !== null) return '/songs/page/' + page;
-		else if (page === 0) return '/songs/';
+		if (page !== null) return '/dashboard/' + page;
+		else if (page === 0) return '/dashboard/';
 		else return null;
 	}
 });
 
-app.get('/songs/get/:id', function(req, res) {
-	var id = req.params.id;
-	if (/.mid/.test(id)) {
-		var headers = { 'Content-Type': 'audio/midi' };
-		fs.readFile(__dirname + '/songs/' + id, function(err, text) {
-    	res.send(text, headers);
-  	});
-	} else if (/.sse/.test(id)) {
-		var headers = { 'Content-Type': 'application/instrument-thing' };
-		var filename = id.replace('.sse', '.mid');
-		fs.readFile(__dirname + '/songs/' + filename, function(err, text) {
-    	res.send(text, headers);
-  	});
-	} else {
-		querySong(id);
-		
-		function querySong(id) {
-			mysql.query(
-					'SELECT * FROM songs WHERE id=? LIMIT 1',
-					[id],
-					function(err, res, fields) {
-						if (err) throw err;
-						queryTracks(res[0]);
-					});
-		}
-		function queryTracks(song) {
-			mysql.query(
-					'SELECT * FROM song_tracks WHERE song_id=?',
-					[song.id],
-					function(err, res, fields) {
-						if (err) throw err;
-						song.tracks = res;
-						finishSong(song);
-					});
-		}
-		function finishSong(song) {
-			renderPage({
-				title: song.title,
-				content: render('/pages/songs/get.html', {
-					song: song
-				})
-			}, req, res);
-		}
-	}
-});
-
-*/app.get('/new', function(req, res) {
+app.get('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	renderPage({
 		title: 'Record an item!',
@@ -334,10 +288,15 @@ function getWhereClausesForSearch(terms) {
 		' OR artist LIKE ': '%' + terms + '%',
 		' OR note LIKE ': '%' + terms + '%'
 	};
+}*/
+function getWhereClausesForSearch(terms) {
+	return {};
 }
-function renderSongList(req, res, route, page, extra_mysql) {
+function renderItemList(req, res, route, page, extra_mysql) {
+	if (!requireAuth(req, res)) return;
+	
 	page = parseInt(page);
-	var page_size = config.other.song_page_size;
+	var page_size = config.other.dashboard_page_size;
 	var mysql_args = [];
 	var extra_mysql_str = '';
 	if (!extra_mysql || extra_mysql.length == 0) extra_mysql_str = " 1=1 ";
@@ -346,18 +305,21 @@ function renderSongList(req, res, route, page, extra_mysql) {
 		extra_mysql_str += k + '?';
 		mysql_args.push(extra_mysql[k]);
 	}
+	mysql_args.push(req.session.user.id);
 	var query =
 			'SELECT ' +
-					' s.id AS id, ' +
-					' s.title AS title, ' +
-					' s.artist AS artist, ' +
-					' CONCAT(u.first_name,\' \',u.last_name) AS ownerName ' +
-				' FROM songs AS s ' +
-				' LEFT JOIN users as u ' +
-				' ON s.owner=u.id ' +
+					' id, ' +
+					' caption, ' +
+					' price, ' +
+					' location, ' +
+					' imgurl, ' +
+					' permissions, ' +
+					' creation_ts ' +
+				' FROM items ' +
 				' WHERE ' +
 				' ' + extra_mysql_str + ' ' +
-				' ORDER BY s.title ' +
+				'   AND userid = ?' +
+				' ORDER BY creation_ts DESC ' +
 				' LIMIT ' + (page_size + 1) +
 				' OFFSET ' + (page * page_size);
 	console.log(query);
@@ -365,19 +327,19 @@ function renderSongList(req, res, route, page, extra_mysql) {
 		if (err) throw err;
 		finish(res);
 	});
-	function finish(songs) {
+	function finish(items) {
 		var prev_pg = (page > 0 ? page - 1 : null);
-		var next_pg = (songs.length > page_size ? page + 1 : null);
+		var next_pg = (items.length > page_size ? page + 1 : null);
 		renderPage({
-			title: 'List of songs',
-			content: render('/pages/songs/list.html', {
+			title: 'Dashboard',
+			content: render('/pages/list.html', {
 				prev_page: route(prev_pg),
 				next_page: route(next_pg),
-				songs: songs.length > page_size ? (songs.pop() && songs) : songs
+				items: items.length > page_size ? (items.pop() && items) : items
 			})
 		}, req, res);
 	}
-}*/
+}
 
 everyauth.helpExpress(app);
 
