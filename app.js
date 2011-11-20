@@ -136,7 +136,7 @@ app.all('/accounts/login', function(req, res) {
 });
 
 app.all('/firstsignin', function(req, res) {
-	var next = '/dashboard/';
+	req.session.next = '/dashboard/';
 	res.redirect('/auth/facebook');
 });
 
