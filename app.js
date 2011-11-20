@@ -124,19 +124,6 @@ app.get('/return', function(req, res) {
 });
 
 app.all('/accounts/login', function(req, res) {
-	/*if (!req.loggedIn) {  // TODO(jkoff): Remove this! It bypasses auth.
-		var user = {
-			fbId: 1337,
-			firstName: "Jonathan Tester",
-			lastName: "Koff"
-		};
-		user.id = user.fbId;
-		req.session.user = user;
-		req.loggedIn = true;
-		res.redirect(getNextURL(req));
-		return;
-	}*/
-	
 	var next = getNextURL(req);
 	renderPage({
 		title: 'Log in',
@@ -146,6 +133,11 @@ app.all('/accounts/login', function(req, res) {
 		})
 	}, req, res);
 	//res.redirect(next);
+});
+
+app.all('/firstsignin', function(req, res) {
+	req.session.next = '/dashboard/';
+	res.redirect('/auth/facebook');
 });
 
 app.get('/dashboard/', function(req, res) {
@@ -168,7 +160,7 @@ app.get('/dashboard/:id', function(req, res) {
 });
 
 app.get('/new', function(req, res) {
-	if (!requireAuth(req, res)) return;
+	//if (!requireAuth(req, res)) return;
 	renderPage({
 		title: 'Record an item!',
 		content: render('/pages/new.html', {
@@ -374,6 +366,7 @@ function renderItemList(req, res, route, page, extra_mysql) {
 	if (!requireAuth(req, res)) return;
 	
 	page = parseInt(page);
+	var userid = req.session.user.id;
 	var page_size = config.other.dashboard_page_size;
 	var mysql_args = [];
 	var extra_mysql_str = '';
@@ -383,7 +376,7 @@ function renderItemList(req, res, route, page, extra_mysql) {
 		extra_mysql_str += k + '?';
 		mysql_args.push(extra_mysql[k]);
 	}
-	mysql_args.push(req.session.user.id);
+	mysql_args.push(userid);
 	var query =
 			'SELECT ' +
 					' id, ' +

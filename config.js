@@ -14,6 +14,6 @@
 		"appSecret": "308b5a431ad6f8f5156754182eda6684"
 	},
 	"other": {
-		"dashboard_page_size": 2
+		"dashboard_page_size": 99999
 	}
 }

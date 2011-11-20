@@ -1,6 +1,13 @@
 <article>
-	<p><a href="/new">Track a transaction</a></p>
-	<table id="item_table">
+	<% if (items.length == 0) { %>
+		<p>There doesn't seem to be anything here! To start tracking, download our application on the Android Market.</p>
+		<a href="#"><img src="/Template/assets/images/navigation/market.png" alt="Available in the Android Market" /></a>
+		<div style="height: 75px;">&nbsp;</div>
+	<% } %>
+	<% for (var i in items) { i = items[i]; %>
+		<a href="/items/<%= i.id %>"><img class="galleryimg" src="<%= i.imgurl %>" width=150 height=100 alt="<%= i.caption %>" /></a>
+	<% } %>
+	<!--<table id="item_table">
 		<tr>
 			<th>Caption</th>
 			<th>Price</th>
@@ -25,5 +32,5 @@
 	<% } %>
 	<% if (next_page !== null) { %>
 		<a href="<%= next_page %>">Next Page</a>
-	<% } %>
+	<% } %>-->
 </article>
