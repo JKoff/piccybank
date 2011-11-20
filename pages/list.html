@@ -1,7 +1,7 @@
 <article>
 	<% if (items.length == 0) { %>
 		<p>There doesn't seem to be anything here! To start tracking, download our application on the Android Market.</p>
-		<a href="#"><img src="Template/assets/images/navigation/market.png" alt="Available in the Android Market" /></a>
+		<a href="#"><img src="/Template/assets/images/navigation/market.png" alt="Available in the Android Market" /></a>
 	<% } %>
 	<% for (var i in items) { i = items[i]; %>
 		<a href="/items/<%= i.id %>"><img class="galleryimg" src="<%= i.imgurl %>" width=150 height=100 alt="<%= i.caption %>" /></a>
