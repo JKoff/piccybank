@@ -27,7 +27,6 @@ everyauth.facebook
 			//throw 'Facebook authentication error.';
 		})
 		.findOrCreateUser(function(sess, accessTok, accessTokExtra, fbUserMeta) {
-			console.log('Here');
 			var user = {
 				fbId: fbUserMeta.id,
 				firstName: fbUserMeta.first_name,
@@ -59,7 +58,6 @@ everyauth.facebook
 			res.redirect(getNextURL(req), 303);
 		})
 		.redirectPath('/return');
-everyauth.debug = true;
 
 var app = express.createServer();
 app.use(express.bodyParser());
@@ -117,11 +115,28 @@ app.get('/', function(req, res) {
 	}, req, res);
 });
 
+app.get('/mobile', function(req, res) {
+    res.redirect('/accounts/login?next=/new');
+});
+
 app.get('/return', function(req, res) {
 	res.redirect(getNextURL(req));
 });
 
 app.all('/accounts/login', function(req, res) {
+	/*if (!req.loggedIn) {  // TODO(jkoff): Remove this! It bypasses auth.
+		var user = {
+			fbId: 1337,
+			firstName: "Jonathan Tester",
+			lastName: "Koff"
+		};
+		user.id = user.fbId;
+		req.session.user = user;
+		req.loggedIn = true;
+		res.redirect(getNextURL(req));
+		return;
+	}*/
+	
 	var next = getNextURL(req);
 	renderPage({
 		title: 'Log in',
@@ -178,9 +193,14 @@ app.post('/new', function(req, res) {
 		case "public":
 			perms = fields.permissions;
 		};
+		var price = null;
+		try {
+			price = parseFloat(/([0-9]+\.[0-9]+)/.exec(fields.price)[1]);
+		} catch (e) {}
 		mysql.query(
-				'INSERT INTO items (userid, caption, permissions) VALUES (?, ?, ?);',
-				[req.session.user.id, fields.caption, perms],
+				'INSERT INTO items (userid, caption, price, permissions)' +
+						'VALUES (?, ?, ?, ?);',
+				[req.session.user.id, fields.caption, price, perms],
 				function(err, info) {
 					if (err) throw err;
 					var id = info.insertId;
