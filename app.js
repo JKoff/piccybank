@@ -7,11 +7,14 @@ var argv = require('optimist')
     .argv;
 
 var async = require('async');
+var aws = require('aws-lib');
 var everyauth = require('everyauth');
+var crypto = require('crypto');
 var csrf = require('express-csrf');
 var express = require('express');
 var formidable = require('formidable');
 var fs = require('fs');
+var knox = require('knox');
 
 eval('var config = ' + fs.readFileSync(__dirname + '/config.js', 'utf8'));
 
@@ -82,6 +85,12 @@ var mysql = require('mysql').createClient({
 });
 /*var redis_global = require('redis');
 var redis = redis_global.createClient(config.redis.port, config.redis.host);*/
+
+var s3 = knox.createClient({
+	key: 'AKIAJPZFNU4TKYMWNC2Q',
+	secret: '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',
+	bucket: 'piccybank'
+});
 
 function uncachedLoadFileSync(path) {
 	return fs.readFileSync(__dirname + path, 'utf8');
@@ -203,11 +212,12 @@ app.post('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	
 	var form = formidable.IncomingForm();
-	console.log(JSON.stringify(form));
-	form.addListener('progress', function (recvd, exptd) {
-		console.log('.');
-	});
-	form.parse(req, function(err, fields, files) {
+	var started = false;
+	function processUL(err, fields, files) {
+		// TODO(jkoff): This is an incorrect mutex mechanism.
+		if (started) return;
+		// This isn't atomic test-and-set!!
+		started = true;
 		var perms = "private";
 		switch (fields.permissions) {
 		case "private":
@@ -230,9 +240,16 @@ app.post('/new', function(req, res) {
 							}
 						});*/  // redis.publish
 					});  // mv
-					res.redirect('/items/' + id);
+					res.writeHead(302, {'Location':
+							'/items/' + id
+					});
+					res.end();
+					//res.redirect('/items/' + id);
 				});  // mysql cb
-	});  // form.parse
+	}  // form.parse
+	form.parse(req,processUL);
+	setTimeout(function(){processUL(null,req.body,req.body);},1000);
+	return;
 });
 
 app.get('/items/:id', function(req, res) {
