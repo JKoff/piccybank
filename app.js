@@ -203,6 +203,10 @@ app.post('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	
 	var form = formidable.IncomingForm();
+	console.log(JSON.stringify(form));
+	form.addListener('progress', function (recvd, exptd) {
+		console.log('.');
+	});
 	form.parse(req, function(err, fields, files) {
 		var perms = "private";
 		switch (fields.permissions) {
