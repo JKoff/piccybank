@@ -94,7 +94,7 @@ function cachedLoadFileSync(path) {
 /* TODO(jkoff): cachedLoadFileSync */
 var file = uncachedLoadFileSync;
 
-//process.on('uncaughtException', function() {});
+process.on('uncaughtException', function() {});
 process.on('exit', onExit);
 
 registerStatic('/favicon.ico');
@@ -138,6 +138,24 @@ app.all('/accounts/login', function(req, res) {
 app.all('/firstsignin', function(req, res) {
 	req.session.next = '/dashboard/';
 	res.redirect('/auth/facebook');
+});
+
+app.get('/dashboard/by/:order', function(req, res) {
+	renderItemList(req, res, route, 0, '', req.params.order);
+	function route(page) {
+		if (page !== null) return '/dashboard/by/:order/page/' + page;
+		else if (page === 0) return '/dashboard/by/:order';
+		else return null;
+	}
+});
+
+app.get('/dashboard/by/:order/page/:id', function(req, res) {
+	renderItemList(req, res, route, req.params.id, '', req.params.order);
+	function route(page) {
+		if (page !== null) return '/dashboard/by/:order/' + page;
+		else if (page === 0) return '/dashboard/by/:order/';
+		else return null;
+	}
 });
 
 app.get('/dashboard/', function(req, res) {
@@ -332,44 +350,18 @@ app.get('/uploaded-images/:file', function(req, res) {
 	}
 });
 
-/*app.get('/songs/search', function(req, res) {
-	var terms = req.param('terms');
-	renderSongList(req, res, route, 0, getWhereClausesForSearch(terms));
-	function route(page) {
-		if (page !== null) return '/songs/search/page/' + page + '?terms=' + terms;
-		else if (page === 0) return '/songs/search' + '?terms=' + terms;
-		else return null;
-	}
-});
-app.get('/songs/search/page/:page', function(req, res) {
-	var page = req.params.page;
-	var terms = req.param('terms');
-	renderSongList(req, res, route, page, getWhereClausesForSearch(terms));
-	function route(page) {
-		if (page !== null) return '/songs/search/page/' + page + '?terms=' + terms;
-		else if (page === 0) return '/songs/search' + '?terms=' + terms;
-		else return null;
-	}
-});
-
-function getWhereClausesForSearch(terms) {
-	return {
-		' OR title LIKE ': '%' + terms + '%',
-		' OR artist LIKE ': '%' + terms + '%',
-		' OR note LIKE ': '%' + terms + '%'
-	};
-}*/
 function getWhereClausesForSearch(terms) {
 	return {};
 }
-function renderItemList(req, res, route, page, extra_mysql) {
-	if (!requireAuth(req, res)) return;
+function renderItemList(req, res, route, page, extra_mysql, order_by) {
+	//if (!requireAuth(req, res)) return;
 	
 	page = parseInt(page);
-	var userid = req.session.user.id;
+	var userid = '1658071309';//req.session.user.id;
 	var page_size = config.other.dashboard_page_size;
 	var mysql_args = [];
 	var extra_mysql_str = '';
+	if (order_by === undefined) order_by = 'creation_ts';
 	if (!extra_mysql || extra_mysql.length == 0) extra_mysql_str = " 1=1 ";
 	else extra_mysql_str = " 1=2 ";
 	for (var k in extra_mysql) {
@@ -390,7 +382,7 @@ function renderItemList(req, res, route, page, extra_mysql) {
 				' WHERE ' +
 				' ' + extra_mysql_str + ' ' +
 				'   AND userid = ?' +
-				' ORDER BY creation_ts DESC ' +
+				' ORDER BY ' + order_by + ' DESC ' +
 				' LIMIT ' + (page_size + 1) +
 				' OFFSET ' + (page * page_size);
 	console.log(query);
