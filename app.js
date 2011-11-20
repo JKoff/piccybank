@@ -266,6 +266,12 @@ app.get('/items/:id', function(req, res) {
 				});
 	}
 	function finishItem(item) {
+		if (item.permissions === 'private') {
+			if (!requireAuth(req, res)) return;
+			// TODO(jkoff): More user-friendly auth error.
+			if (req.session.user.id != item.userid) { authError(); return; }
+		}
+		
 		renderPage({
 			caption: item.caption,
 			imgurl: item.imgurl,
