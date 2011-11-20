@@ -1,2 +1,57 @@
 <img src="<%= item.imgurl %>" alt="<%= item.caption %>" />
-<p><i><%= item.caption %></i></p>
+<p><i><%= item.caption %> - <%= item.price %></i></p>
+<p>Ratings:
+	<ul>
+		<li>Base rating:
+			<span id="base_rating" class="rating"></span>
+		</li>
+		<% for (var rkey in ratings) { %>
+			<li><%= ratings[rkey].first_name + ' ' + ratings[rkey].last_name %>:
+				<span id="rating_<%= rkey %>" class="rating"></span>
+			</li>
+		<% } %>
+		<li>Average rating:
+			<span id="avg_rating" class="rating"></span> out of <%= item.nratings %>
+		</li>
+		<li>Your rating:
+			<!-- TODO(jkoff): Make this persist. -->
+			<span id="rating_box" class="rating"></span>
+		</li>
+		<script>
+			var MAX_RATING = 5;
+			var DEFAULT_RATING = 2;
+			
+			initRating('base_rating', false);
+			setRating('base_rating', <%= item.base_rating %>);
+			<% for (var rkey in ratings) { %>
+				initRating('rating_<%= rkey %>', false);
+				setRating('rating_<%= rkey %>', <%= ratings[rkey].rating %>);
+			<% } %>
+			initRating('avg_rating', false);
+			setRating('avg_rating', <%= item.avg_rating || "'-'" %>);
+			initRating('rating_box', true);
+			setRating('rating_box', DEFAULT_RATING);
+			function initRating(id, is_editable) {
+				for (var i = 0; i < MAX_RATING; i++) {
+					var onclick =
+						is_editable ?
+							'setRating(\'rating_box\', ' + i + ');' :
+							'';
+					$('#' + id).append('<span onclick="' + onclick + '">m</span>');
+				}
+			}
+			function setRating(id, n) {
+				$.get('/rate/<%= item.id %>/rating/n');
+				var children = $('#'+id).children();
+				var i;
+				for (i = 0; i < n; i++) {
+					$(children[i]).text('m');
+				}
+				$(children[i]).text('X');
+				for (i = n + 1; i <= MAX_RATING; i++) {
+					$(children[i]).text('m');
+				}
+			}
+		</script>
+	</ul>
+</p>
