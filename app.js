@@ -99,11 +99,16 @@ process.on('exit', onExit);
 registerStatic('/style/:filename');
 registerStatic('/images/:filename');
 registerStatic('/images/social_signin_buttons_icons/:filename');
+registerStatic('/Template/assets/css/:filename');
+registerStatic('/Template/assets/images/:filename');
+registerStatic('/Template/assets/images/navigation/:filename');
+registerStatic('/Template/assets/fonts/:filename');
+registerStatic('/Template/assets/js/:filename');
 registerStatic('/vendor/:filename');
 
 app.get('/', function(req, res) {
 	renderPage({
-		title: 'Home',
+		title: 'visualize your expenses',
 		content: render('/pages/index.html', {})
 	}, req, res);
 });
@@ -464,7 +469,7 @@ function render(path, props) {
 
 function renderPage(props, req, res) {
 	function formatPageTitle(str) {
-		return str + ' - Piccybank';
+		return 'piccybank - ' + str;
 	}
 	props.authenticated = req.loggedIn;
 	props.user = req.session.user;
