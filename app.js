@@ -51,6 +51,7 @@ everyauth.facebook
 			res.redirect(getNextURL(req), 303);
 		})
 		.redirectPath('/return');
+everyauth.debug = true;
 
 var app = express.createServer();
 app.use(express.bodyParser());
