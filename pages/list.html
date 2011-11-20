@@ -1,0 +1,29 @@
+<article>
+	<p><a href="/new">Track a transaction</a></p>
+	<table id="item_table">
+		<tr>
+			<th>Caption</th>
+			<th>Price</th>
+			<th>Location</th>
+			<th>imgurl</th>
+			<th>permissions</th>
+			<th>creation_ts</th>
+		</tr>
+		<% for (var i in items) { i = items[i]; %>
+			<tr>
+				<td><a href="/items/<%= i.id %>"><%= i.caption %></a></td>
+				<td><%= i.price %></td>
+				<td><%= i.location %></td>
+				<td><%= i.imgurl %></td>
+				<td><%= i.permissions %></td>
+				<td><%= i.creation_ts %></td>
+			</tr>
+		<% } %>
+	</table>
+	<% if (prev_page !== null) { %>
+		<a href="<%= prev_page %>">Previous Page</a>
+	<% } %>
+	<% if (next_page !== null) { %>
+		<a href="<%= next_page %>">Next Page</a>
+	<% } %>
+</article>

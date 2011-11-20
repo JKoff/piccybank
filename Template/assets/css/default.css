@@ -1,0 +1,93 @@
+header, footer, nav, article, section {display:block}
+img {border: 0}
+
+@font-face {
+    font-family: 'QuadrantaBold';
+    src: url('../fonts/quadranta-bold-webfont.eot');
+    src: url('../fonts/quadranta-bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/quadranta-bold-webfont.woff') format('woff'),
+         url('../fonts/quadranta-bold-webfont.ttf') format('truetype'),
+         url('../fonts/quadranta-bold-webfont.svg#QuadrantaBold') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+h1 {
+	font: 50px/0em 'QuadrantaBold', sans-serif;
+}
+
+body {
+	background: #ff8080;
+	margin: 0;
+	color: #fff;
+	font-family: 'Verdana', 'Arial', sans-serif;
+	font-size: 12px
+}
+
+#background {
+	margin-top: -10px;
+	border-top: 10px solid #ff8080;
+	background: url("../images/navigation/body.png");
+	position: relative;
+	z-index: 5;
+	top: 10px;
+	padding-bottom: 130px
+}
+
+#noise {
+	background: url("../images/navigation/noise.png");
+	position: relative;
+	z-index: 2;
+}
+
+header{
+	width: 810px;
+	height: 141px;
+	background: url("../images/navigation/logo.png") no-repeat;
+	position: relative;
+	top: -20px
+}
+
+#holder {
+	width: 810px;
+	margin: 0 auto
+}
+
+footer {
+	height: 146px;
+	margin-top:-130px;
+	background: url("../images/navigation/footer.png") repeat-x;
+	border-bottom: 20px solid #ff8080
+}
+
+#left {
+	width: 410px;
+	float: left
+}
+
+#right {
+	width: 360px;
+	float: right
+}
+
+footer, header, img, h1, h2, h3, p {position: relative; z-index: 5}
+
+a #fb-login-btn {
+	width: 150px;
+	display: block;
+	margin: 0 auto;
+}
+#fb-login-btn {
+	background: url("/images/social_signin_buttons_icons/facebook_signin.png")
+							top left no-repeat;
+	cursor: pointer;
+	display: block;
+	width: 150px;
+	height: 22px;
+}
+#fb-login-btn:hover {
+	background-position: 0 -24px;
+}
+#fb-login-btn:active {
+	background-position: 0 -48px;
+}

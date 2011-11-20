@@ -7,11 +7,14 @@ var argv = require('optimist')
     .argv;
 
 var async = require('async');
+var aws = require('aws-lib');
 var everyauth = require('everyauth');
+var crypto = require('crypto');
 var csrf = require('express-csrf');
 var express = require('express');
 var formidable = require('formidable');
 var fs = require('fs');
+var knox = require('knox');
 
 eval('var config = ' + fs.readFileSync(__dirname + '/config.js', 'utf8'));
 
@@ -24,7 +27,6 @@ everyauth.facebook
 			//throw 'Facebook authentication error.';
 		})
 		.findOrCreateUser(function(sess, accessTok, accessTokExtra, fbUserMeta) {
-			console.log('Here');
 			var user = {
 				fbId: fbUserMeta.id,
 				firstName: fbUserMeta.first_name,
@@ -32,21 +34,14 @@ everyauth.facebook
 			};
 			user.id = user.fbId;
 			sess.user = user;
-			/*mysql.query(
-					'SELECT id FROM users WHERE fb_id=?;', [user.fbId],
-					function(err, res, fields) {
-						if (!err && res.length > 0) {
-							sess.user.id = user.id = res[0].id;
-						}
-					});
-			mysql.query(
-					'INSERT IGNORE INTO users (fb_id, first_name, last_name) VALUES (?, ?, ?);',
-					[user.fbId, user.firstName, user.lastName],
-					function(err, info) {
-						if (err) throw err;
-						var id = info.insertId;
-						if (id) sess.user.id = user.id = id;
-					});*/
+			try {
+				mysql.query(
+						'REPLACE INTO users (userid, first_name, last_name) VALUES (?, ?, ?)',
+						[user.id, user.firstName, user.lastName],
+						function(err, res, fields) {
+							if (err) throw err;  // TODO(jkoff): Maybe see if we should handle?
+						});
+			} catch (e) { }
 			return user;
 		})
 		.logoutPath('/accounts/logout')
@@ -56,7 +51,6 @@ everyauth.facebook
 			res.redirect(getNextURL(req), 303);
 		})
 		.redirectPath('/return');
-everyauth.debug = true;
 
 var app = express.createServer();
 app.use(express.bodyParser());
@@ -83,6 +77,12 @@ var mysql = require('mysql').createClient({
 /*var redis_global = require('redis');
 var redis = redis_global.createClient(config.redis.port, config.redis.host);*/
 
+var s3 = knox.createClient({
+	key: 'AKIAJPZFNU4TKYMWNC2Q',
+	secret: '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',
+	bucket: 'piccybank'
+});
+
 function uncachedLoadFileSync(path) {
 	return fs.readFileSync(__dirname + path, 'utf8');
 }
@@ -96,16 +96,26 @@ var file = uncachedLoadFileSync;
 //process.on('uncaughtException', function() {});
 process.on('exit', onExit);
 
+registerStatic('/favicon.ico');
 registerStatic('/style/:filename');
 registerStatic('/images/:filename');
 registerStatic('/images/social_signin_buttons_icons/:filename');
+registerStatic('/Template/assets/css/:filename');
+registerStatic('/Template/assets/images/:filename');
+registerStatic('/Template/assets/images/navigation/:filename');
+registerStatic('/Template/assets/fonts/:filename');
+registerStatic('/Template/assets/js/:filename');
 registerStatic('/vendor/:filename');
 
 app.get('/', function(req, res) {
 	renderPage({
-		title: 'Home',
+		title: 'visualize your expenses',
 		content: render('/pages/index.html', {})
 	}, req, res);
+});
+
+app.get('/mobile', function(req, res) {
+    res.redirect('/accounts/login?next=/new');
 });
 
 app.get('/return', function(req, res) {
@@ -113,6 +123,19 @@ app.get('/return', function(req, res) {
 });
 
 app.all('/accounts/login', function(req, res) {
+	/*if (!req.loggedIn) {  // TODO(jkoff): Remove this! It bypasses auth.
+		var user = {
+			fbId: 1337,
+			firstName: "Jonathan Tester",
+			lastName: "Koff"
+		};
+		user.id = user.fbId;
+		req.session.user = user;
+		req.loggedIn = true;
+		res.redirect(getNextURL(req));
+		return;
+	}*/
+	
 	var next = getNextURL(req);
 	renderPage({
 		title: 'Log in',
@@ -124,72 +147,26 @@ app.all('/accounts/login', function(req, res) {
 	//res.redirect(next);
 });
 
-/*app.get('/songs/', function(req, res) {
-	renderSongList(req, res, route, 0, '');
+app.get('/dashboard/', function(req, res) {
+	renderItemList(req, res, route, 0, '');
 	function route(page) {
-		if (page !== null) return '/songs/page/' + page;
-		else if (page === 0) return '/songs/';
+		if (page !== null) return '/dashboard/' + page;
+		else if (page === 0) return '/dashboard/';
 		else return null;
 	}
 });
 
-app.get('/songs/page/:id', function(req, res) {
+app.get('/dashboard/:id', function(req, res) {
 	var id = req.params.id;
-	renderSongList(req, res, route, id, '');
+	renderItemList(req, res, route, id, '');
 	function route(page) {
-		if (page !== null) return '/songs/page/' + page;
-		else if (page === 0) return '/songs/';
+		if (page !== null) return '/dashboard/' + page;
+		else if (page === 0) return '/dashboard/';
 		else return null;
 	}
 });
 
-app.get('/songs/get/:id', function(req, res) {
-	var id = req.params.id;
-	if (/.mid/.test(id)) {
-		var headers = { 'Content-Type': 'audio/midi' };
-		fs.readFile(__dirname + '/songs/' + id, function(err, text) {
-    	res.send(text, headers);
-  	});
-	} else if (/.sse/.test(id)) {
-		var headers = { 'Content-Type': 'application/instrument-thing' };
-		var filename = id.replace('.sse', '.mid');
-		fs.readFile(__dirname + '/songs/' + filename, function(err, text) {
-    	res.send(text, headers);
-  	});
-	} else {
-		querySong(id);
-		
-		function querySong(id) {
-			mysql.query(
-					'SELECT * FROM songs WHERE id=? LIMIT 1',
-					[id],
-					function(err, res, fields) {
-						if (err) throw err;
-						queryTracks(res[0]);
-					});
-		}
-		function queryTracks(song) {
-			mysql.query(
-					'SELECT * FROM song_tracks WHERE song_id=?',
-					[song.id],
-					function(err, res, fields) {
-						if (err) throw err;
-						song.tracks = res;
-						finishSong(song);
-					});
-		}
-		function finishSong(song) {
-			renderPage({
-				title: song.title,
-				content: render('/pages/songs/get.html', {
-					song: song
-				})
-			}, req, res);
-		}
-	}
-});
-
-*/app.get('/new', function(req, res) {
+app.get('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	renderPage({
 		title: 'Record an item!',
@@ -203,20 +180,26 @@ app.post('/new', function(req, res) {
 	if (!requireAuth(req, res)) return;
 	
 	var form = formidable.IncomingForm();
-	console.log(JSON.stringify(form));
-	form.addListener('progress', function (recvd, exptd) {
-		console.log('.');
-	});
-	form.parse(req, function(err, fields, files) {
+	var started = false;
+	function processUL(err, fields, files) {
+		// TODO(jkoff): This is an incorrect mutex mechanism.
+		if (started) return;
+		// This isn't atomic test-and-set!!
+		started = true;
 		var perms = "private";
 		switch (fields.permissions) {
 		case "private":
 		case "public":
 			perms = fields.permissions;
 		};
+		var price = null;
+		try {
+			price = parseFloat(/([0-9]+\.[0-9]+)/.exec(fields.price)[1]);
+		} catch (e) {}
 		mysql.query(
-				'INSERT INTO items (userid, caption, permissions) VALUES (?, ?, ?);',
-				[req.session.user.id, fields.caption, perms],
+				'INSERT INTO items (userid, caption, price, permissions, base_rating)' +
+						'VALUES (?, ?, ?, ?, ?);',
+				[req.session.user.id, fields.caption, price, perms, fields.rating],
 				function(err, info) {
 					if (err) throw err;
 					var id = info.insertId;
@@ -230,13 +213,23 @@ app.post('/new', function(req, res) {
 							}
 						});*/  // redis.publish
 					});  // mv
-					res.redirect('/items/' + id);
+					res.writeHead(302, {'Location':
+							'/items/' + id
+					});
+					res.end();
+					//res.redirect('/items/' + id);
 				});  // mysql cb
-	});  // form.parse
+	}  // form.parse
+	form.parse(req,processUL);
+	setTimeout(function(){processUL(null,req.body,req.body);},1000);
+	return;
 });
 
-app.get('/items/:id', function(req, res) {
-	var id = req.params.id;
+app.get('/rate/:id/rating/:rating', function(req, res) {
+	if (!requireAuth(req, res)) return;
+	
+	var itemid = req.params.id;
+	var rating = req.params.rating;
 	queryItem(id);
 	
 	function queryItem(id) {
@@ -249,12 +242,73 @@ app.get('/items/:id', function(req, res) {
 				});
 	}
 	function finishItem(item) {
+		if (item.permissions === 'private') {
+			// TODO(jkoff): More user-friendly auth error.
+			if (req.session.user.id != item.userid) { authError(); return; }
+		}
+		rateItem(itemid, req.session.user.id, rating);
+	}
+	function rateItem(itemid, userid, rating) {
+		try {
+			mysql.query(
+					'REPLACE INTO ratings (itemid, userid, rating) VALUES (?, ?, ?)',
+					[itemid, userid, rating],
+					function(err, res, fields) {
+						if (err) throw err;  // TODO(jkoff): Maybe see if we should handle?
+					});
+		} catch (e) { }
+	}
+});
+
+app.get('/items/:id', function(req, res) {
+	var id = req.params.id;
+	queryItem(id);
+	
+	function queryItem(id) {
+		mysql.query(
+				'SELECT i.id AS id, i.userid AS userid, i.caption AS caption, ' +
+						'i.price AS price, i.location AS location, ' +
+						'i.imgurl AS imgurl, i.permissions AS permissions, ' +
+						'i.creation_ts AS creation_ts, i.base_rating AS base_rating, ' +
+						'AVG(r.rating) AS avg_rating, COUNT(r.rating) AS nratings ' +
+						'FROM items AS i ' +
+						'LEFT JOIN ratings as r ON i.id = r.itemid AND i.userid = r.userid ' +
+						'WHERE i.id=? ' +
+						'GROUP BY i.id LIMIT 1',
+				[id],
+				function(err, res, fields) {
+					if (err) throw err;
+					queryRatings(res[0]);
+				});
+	}
+	function queryRatings(item) {
+		mysql.query(
+				'SELECT u.first_name as first_name, u.last_name as last_name, ' +
+						'u.userid as userid, r.rating as rating ' +
+						'FROM ratings AS r ' +
+						'LEFT JOIN users as u ON u.userid = r.userid ' +
+						'WHERE r.itemid=? ' +
+						'ORDER BY u.first_name',
+				[item.id],
+				function(err, res, fields) {
+					if (err) throw err;
+					finishItem(item, res);
+				});
+	}
+	function finishItem(item, ratings) {
+		if (item.permissions === 'private') {
+			if (!requireAuth(req, res)) return;
+			// TODO(jkoff): More user-friendly auth error.
+			if (req.session.user.id != item.userid) { authError(); return; }
+		}
+		
 		renderPage({
 			caption: item.caption,
 			imgurl: item.imgurl,
 			title: 'Viewing ' + item.caption,
 			content: render('/pages/get.html', {
-				item: item
+				item: item,
+				ratings: ratings
 			})
 		}, req, res);
 	}
@@ -311,10 +365,15 @@ function getWhereClausesForSearch(terms) {
 		' OR artist LIKE ': '%' + terms + '%',
 		' OR note LIKE ': '%' + terms + '%'
 	};
+}*/
+function getWhereClausesForSearch(terms) {
+	return {};
 }
-function renderSongList(req, res, route, page, extra_mysql) {
+function renderItemList(req, res, route, page, extra_mysql) {
+	if (!requireAuth(req, res)) return;
+	
 	page = parseInt(page);
-	var page_size = config.other.song_page_size;
+	var page_size = config.other.dashboard_page_size;
 	var mysql_args = [];
 	var extra_mysql_str = '';
 	if (!extra_mysql || extra_mysql.length == 0) extra_mysql_str = " 1=1 ";
@@ -323,18 +382,21 @@ function renderSongList(req, res, route, page, extra_mysql) {
 		extra_mysql_str += k + '?';
 		mysql_args.push(extra_mysql[k]);
 	}
+	mysql_args.push(req.session.user.id);
 	var query =
 			'SELECT ' +
-					' s.id AS id, ' +
-					' s.title AS title, ' +
-					' s.artist AS artist, ' +
-					' CONCAT(u.first_name,\' \',u.last_name) AS ownerName ' +
-				' FROM songs AS s ' +
-				' LEFT JOIN users as u ' +
-				' ON s.owner=u.id ' +
+					' id, ' +
+					' caption, ' +
+					' price, ' +
+					' location, ' +
+					' imgurl, ' +
+					' permissions, ' +
+					' creation_ts ' +
+				' FROM items ' +
 				' WHERE ' +
 				' ' + extra_mysql_str + ' ' +
-				' ORDER BY s.title ' +
+				'   AND userid = ?' +
+				' ORDER BY creation_ts DESC ' +
 				' LIMIT ' + (page_size + 1) +
 				' OFFSET ' + (page * page_size);
 	console.log(query);
@@ -342,19 +404,19 @@ function renderSongList(req, res, route, page, extra_mysql) {
 		if (err) throw err;
 		finish(res);
 	});
-	function finish(songs) {
+	function finish(items) {
 		var prev_pg = (page > 0 ? page - 1 : null);
-		var next_pg = (songs.length > page_size ? page + 1 : null);
+		var next_pg = (items.length > page_size ? page + 1 : null);
 		renderPage({
-			title: 'List of songs',
-			content: render('/pages/songs/list.html', {
+			title: 'Dashboard',
+			content: render('/pages/list.html', {
 				prev_page: route(prev_pg),
 				next_page: route(next_pg),
-				songs: songs.length > page_size ? (songs.pop() && songs) : songs
+				items: items.length > page_size ? (items.pop() && items) : items
 			})
 		}, req, res);
 	}
-}*/
+}
 
 everyauth.helpExpress(app);
 
@@ -408,7 +470,7 @@ function render(path, props) {
 
 function renderPage(props, req, res) {
 	function formatPageTitle(str) {
-		return str + ' - Piccybank';
+		return 'piccybank - ' + str;
 	}
 	props.authenticated = req.loggedIn;
 	props.user = req.session.user;

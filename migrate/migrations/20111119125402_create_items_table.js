@@ -16,6 +16,7 @@ var create_items_table = new Migration({
 				imgurl VARCHAR(1024), \
 				permissions VARCHAR(255) DEFAULT "private", \
 				creation_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+				base_rating INTEGER, \
 				PRIMARY KEY (id) \
 			) ENGINE=InnoDB;');
 	},

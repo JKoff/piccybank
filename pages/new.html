@@ -1,20 +1,51 @@
-<form action="/new" method="POST" enctype="multipart/form-data">
-	<input type="file" name="upload" id="upload" />
-	<br/>
+<article>
+	<form action="/new" method="POST" enctype="multipart/form-data">
+		<input type="file" name="upload" id="upload" />
+		<br/>
 	
-	<label for="caption">Caption:</label>
-	<input type="text" name="caption" id="caption" />
-	<br/>
+		<label for="caption">Caption:</label>
+		<input type="text" name="caption" id="caption" />
+		<br/>
 	
-	<label for="permissions">Permissions:</label>
-	<select name="permissions">
-		<option value="public">Public</option>
-		<option value="private">Private</option>
-	</select>
-	<br/>
+		<label for="price">Price:</label>
+		<input type="text" name="price" id="price" />
+		<br/>
 	
-	<input type="hidden" name="csrf" value="<%= csrf %>" />
-	<br/>
+		<div id="rating_box" class="rating"></div>
+		<input type="hidden" name="rating" id="rating_param" value="3" />
+		<!-- TODO(jkoff): Make this persist. -->
+		<script>
+			var MAX_RATING = 5;
+			var DEFAULT_RATING = 2;
+			for (var i = 0; i < MAX_RATING; i++) {
+				$('#rating_box').append(
+						'<span onclick="setRating(\'rating_box\', ' + i + ');">m</span>');
+			}
+			setRating('rating_box', DEFAULT_RATING);
+			function setRating(id, n) {
+				$('#rating_param').attr('value', n);
+				var children = $('#'+id).children();
+				var i;
+				for (i = 0; i < n; i++) {
+					$(children[i]).text('m');
+				}
+				$(children[i]).text('X');
+				for (i = n + 1; i <= MAX_RATING; i++) {
+					$(children[i]).text('m');
+				}
+			}
+		</script>
 	
-	<input type="submit" value="Record item!" />
-</form>
+		<label for="permissions">Permissions:</label>
+		<select name="permissions">
+			<option value="public">Public</option>
+			<option value="private">Private</option>
+		</select>
+		<br/>
+	
+		<input type="hidden" name="csrf" value="<%= csrf %>" />
+		<br/>
+	
+		<input type="submit" value="Record item!" />
+	</form>
+</article>
