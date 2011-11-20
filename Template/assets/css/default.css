@@ -71,3 +71,23 @@ footer {
 }
 
 footer, header, img, h1, h2, h3, p {position: relative; z-index: 5}
+
+a #fb-login-btn {
+	width: 150px;
+	display: block;
+	margin: 0 auto;
+}
+#fb-login-btn {
+	background: url("/images/social_signin_buttons_icons/facebook_signin.png")
+							top left no-repeat;
+	cursor: pointer;
+	display: block;
+	width: 150px;
+	height: 22px;
+}
+#fb-login-btn:hover {
+	background-position: 0 -24px;
+}
+#fb-login-btn:active {
+	background-position: 0 -48px;
+}
