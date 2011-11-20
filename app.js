@@ -34,21 +34,14 @@ everyauth.facebook
 			};
 			user.id = user.fbId;
 			sess.user = user;
-			/*mysql.query(
-					'SELECT id FROM users WHERE fb_id=?;', [user.fbId],
-					function(err, res, fields) {
-						if (!err && res.length > 0) {
-							sess.user.id = user.id = res[0].id;
-						}
-					});
-			mysql.query(
-					'INSERT IGNORE INTO users (fb_id, first_name, last_name) VALUES (?, ?, ?);',
-					[user.fbId, user.firstName, user.lastName],
-					function(err, info) {
-						if (err) throw err;
-						var id = info.insertId;
-						if (id) sess.user.id = user.id = id;
-					});*/
+			try {
+				mysql.query(
+						'REPLACE INTO users (userid, first_name, last_name) VALUES (?, ?, ?)',
+						[user.id, user.firstName, user.lastName],
+						function(err, res, fields) {
+							if (err) throw err;  // TODO(jkoff): Maybe see if we should handle?
+						});
+			} catch (e) { }
 			return user;
 		})
 		.logoutPath('/accounts/logout')
@@ -198,9 +191,9 @@ app.post('/new', function(req, res) {
 			price = parseFloat(/([0-9]+\.[0-9]+)/.exec(fields.price)[1]);
 		} catch (e) {}
 		mysql.query(
-				'INSERT INTO items (userid, caption, price, permissions)' +
-						'VALUES (?, ?, ?, ?);',
-				[req.session.user.id, fields.caption, price, perms],
+				'INSERT INTO items (userid, caption, price, permissions, base_rating)' +
+						'VALUES (?, ?, ?, ?, ?);',
+				[req.session.user.id, fields.caption, price, perms, fields.rating],
 				function(err, info) {
 					if (err) throw err;
 					var id = info.insertId;
@@ -226,8 +219,11 @@ app.post('/new', function(req, res) {
 	return;
 });
 
-app.get('/items/:id', function(req, res) {
-	var id = req.params.id;
+app.get('/rate/:id/rating/:rating', function(req, res) {
+	if (!requireAuth(req, res)) return;
+	
+	var itemid = req.params.id;
+	var rating = req.params.rating;
 	queryItem(id);
 	
 	function queryItem(id) {
@@ -241,6 +237,60 @@ app.get('/items/:id', function(req, res) {
 	}
 	function finishItem(item) {
 		if (item.permissions === 'private') {
+			// TODO(jkoff): More user-friendly auth error.
+			if (req.session.user.id != item.userid) { authError(); return; }
+		}
+		rateItem(itemid, req.session.user.id, rating);
+	}
+	function rateItem(itemid, userid, rating) {
+		try {
+			mysql.query(
+					'REPLACE INTO ratings (itemid, userid, rating) VALUES (?, ?, ?)',
+					[itemid, userid, rating],
+					function(err, res, fields) {
+						if (err) throw err;  // TODO(jkoff): Maybe see if we should handle?
+					});
+		} catch (e) { }
+	}
+});
+
+app.get('/items/:id', function(req, res) {
+	var id = req.params.id;
+	queryItem(id);
+	
+	function queryItem(id) {
+		mysql.query(
+				'SELECT i.id AS id, i.userid AS userid, i.caption AS caption, ' +
+						'i.price AS price, i.location AS location, ' +
+						'i.imgurl AS imgurl, i.permissions AS permissions, ' +
+						'i.creation_ts AS creation_ts, i.base_rating AS base_rating, ' +
+						'AVG(r.rating) AS avg_rating, COUNT(r.rating) AS nratings ' +
+						'FROM items AS i ' +
+						'LEFT JOIN ratings as r ON i.id = r.itemid AND i.userid = r.userid ' +
+						'WHERE i.id=? ' +
+						'GROUP BY i.id LIMIT 1',
+				[id],
+				function(err, res, fields) {
+					if (err) throw err;
+					queryRatings(res[0]);
+				});
+	}
+	function queryRatings(item) {
+		mysql.query(
+				'SELECT u.first_name as first_name, u.last_name as last_name, ' +
+						'u.userid as userid, r.rating as rating ' +
+						'FROM ratings AS r ' +
+						'LEFT JOIN users as u ON u.userid = r.userid ' +
+						'WHERE r.itemid=? ' +
+						'ORDER BY u.first_name',
+				[item.id],
+				function(err, res, fields) {
+					if (err) throw err;
+					finishItem(item, res);
+				});
+	}
+	function finishItem(item, ratings) {
+		if (item.permissions === 'private') {
 			if (!requireAuth(req, res)) return;
 			// TODO(jkoff): More user-friendly auth error.
 			if (req.session.user.id != item.userid) { authError(); return; }
@@ -251,7 +301,8 @@ app.get('/items/:id', function(req, res) {
 			imgurl: item.imgurl,
 			title: 'Viewing ' + item.caption,
 			content: render('/pages/get.html', {
-				item: item
+				item: item,
+				ratings: ratings
 			})
 		}, req, res);
 	}
