@@ -38,7 +38,7 @@
 							is_editable ?
 								'setRating(\'rating_box\', ' + i + ');' :
 								'';
-						$('#' + id).append('<span onclick="' + onclick + '">m</span>');
+						$('#' + id).append('<span onclick="' + onclick + '">★</span>');
 					}
 				}
 				function setRating(id, n) {
@@ -46,11 +46,17 @@
 					var children = $('#'+id).children();
 					var i;
 					for (i = 0; i < n; i++) {
-						$(children[i]).text('m');
+						$(children[i]).addClass('midlit');
+						$(children[i]).removeClass('lit');
+						$(children[i]).removeClass('unlit');
 					}
-					$(children[i]).text('X');
+					$(children[i]).addClass('lit');
+					$(children[i]).removeClass('midlit');
+					$(children[i]).removeClass('unlit');
 					for (i = n + 1; i <= MAX_RATING; i++) {
-						$(children[i]).text('m');
+						$(children[i]).addClass('unlit');
+						$(children[i]).removeClass('lit');
+						$(children[i]).removeClass('midlit');
 					}
 				}
 			</script>

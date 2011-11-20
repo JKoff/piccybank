@@ -1,6 +1,6 @@
 <article>
 	<form action="/new" method="POST" enctype="multipart/form-data">
-		<input type="file" name="upload" id="upload" />
+		<input type="file" name="upload" id="upload" value="?" />
 		<br/>
 	
 		<label for="caption">Caption:</label>
@@ -19,7 +19,7 @@
 			var DEFAULT_RATING = 2;
 			for (var i = 0; i < MAX_RATING; i++) {
 				$('#rating_box').append(
-						'<span onclick="setRating(\'rating_box\', ' + i + ');">m</span>');
+						'<span onclick="setRating(\'rating_box\', ' + i + ');">★</span>');
 			}
 			setRating('rating_box', DEFAULT_RATING);
 			function setRating(id, n) {
@@ -27,11 +27,17 @@
 				var children = $('#'+id).children();
 				var i;
 				for (i = 0; i < n; i++) {
-					$(children[i]).text('m');
+					$(children[i]).addClass('midlit');
+					$(children[i]).removeClass('lit');
+					$(children[i]).removeClass('unlit');
 				}
-				$(children[i]).text('X');
+				$(children[i]).addClass('lit');
+				$(children[i]).removeClass('midlit');
+				$(children[i]).removeClass('unlit');
 				for (i = n + 1; i <= MAX_RATING; i++) {
-					$(children[i]).text('m');
+					$(children[i]).addClass('unlit');
+					$(children[i]).removeClass('lit');
+					$(children[i]).removeClass('midlit');
 				}
 			}
 		</script>
