@@ -124,19 +124,6 @@ app.get('/return', function(req, res) {
 });
 
 app.all('/accounts/login', function(req, res) {
-	/*if (!req.loggedIn) {  // TODO(jkoff): Remove this! It bypasses auth.
-		var user = {
-			fbId: 1337,
-			firstName: "Jonathan Tester",
-			lastName: "Koff"
-		};
-		user.id = user.fbId;
-		req.session.user = user;
-		req.loggedIn = true;
-		res.redirect(getNextURL(req));
-		return;
-	}*/
-	
 	var next = getNextURL(req);
 	renderPage({
 		title: 'Log in',
@@ -146,6 +133,11 @@ app.all('/accounts/login', function(req, res) {
 		})
 	}, req, res);
 	//res.redirect(next);
+});
+
+app.all('/firstsignin', function(req, res) {
+	var next = '/dashboard/';
+	res.redirect('/auth/facebook');
 });
 
 app.get('/dashboard/', function(req, res) {
