@@ -96,6 +96,7 @@ var file = uncachedLoadFileSync;
 //process.on('uncaughtException', function() {});
 process.on('exit', onExit);
 
+registerStatic('/favicon.ico');
 registerStatic('/style/:filename');
 registerStatic('/images/:filename');
 registerStatic('/images/social_signin_buttons_icons/:filename');
