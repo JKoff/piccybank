@@ -168,7 +168,7 @@ app.get('/dashboard/:id', function(req, res) {
 });
 
 app.get('/new', function(req, res) {
-	if (!requireAuth(req, res)) return;
+	//if (!requireAuth(req, res)) return;
 	renderPage({
 		title: 'Record an item!',
 		content: render('/pages/new.html', {
@@ -374,6 +374,7 @@ function renderItemList(req, res, route, page, extra_mysql) {
 	if (!requireAuth(req, res)) return;
 	
 	page = parseInt(page);
+	var userid = req.session.user.id;
 	var page_size = config.other.dashboard_page_size;
 	var mysql_args = [];
 	var extra_mysql_str = '';
@@ -383,7 +384,7 @@ function renderItemList(req, res, route, page, extra_mysql) {
 		extra_mysql_str += k + '?';
 		mysql_args.push(extra_mysql[k]);
 	}
-	mysql_args.push(req.session.user.id);
+	mysql_args.push(userid);
 	var query =
 			'SELECT ' +
 					' id, ' +

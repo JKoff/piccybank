@@ -1,6 +1,9 @@
 <article>
-	<img src="<%= item.imgurl %>" alt="<%= item.caption %>" />
-	<p><i><%= item.caption %> - <%= item.price %></i></p>
+	<p><a class="bodylink" href="/dashboard/" alt="Back to dashboard">
+		Back to dashboard
+	</a></p>
+	<img class="individualimg" src="<%= item.imgurl %>" alt="<%= item.caption %>" />
+	<p><i><%= item.caption %> - $<%= item.price %></i></p>
 	<p>Ratings:
 		<ul>
 			<li>Base rating:

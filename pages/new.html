@@ -1,4 +1,4 @@
-<article>
+<article id="upload_box">
 	<form action="/new" method="POST" enctype="multipart/form-data">
 		<input type="file" name="upload" id="upload" value="?" />
 		<br/>
@@ -10,7 +10,8 @@
 		<label for="price">Price:</label>
 		<input type="text" name="price" id="price" />
 		<br/>
-	
+		
+		<label for="rating_param">Rating:</label>
 		<div id="rating_box" class="rating"></div>
 		<input type="hidden" name="rating" id="rating_param" value="3" />
 		<!-- TODO(jkoff): Make this persist. -->
@@ -52,6 +53,14 @@
 		<input type="hidden" name="csrf" value="<%= csrf %>" />
 		<br/>
 	
-		<input type="submit" value="Record item!" />
+		<input type="submit" id="submit_upload" value="Record item!" />
+		<script>
+			$('#submit_upload').attr('disabled', 'disabled');
+			$('#upload').change(function() {
+				if ($('#upload').attr('value')) {
+					$('#submit_upload').attr('disabled', false);
+				}
+			});
+		</script>
 	</form>
 </article>

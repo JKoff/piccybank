@@ -1,6 +1,8 @@
 <article>
-	<p><a href="/new">Track a transaction</a></p>
-	<table id="item_table">
+	<% for (var i in items) { i = items[i]; %>
+		<a href="/items/<%= i.id %>"><img class="galleryimg" src="<%= i.imgurl %>" width=150 height=100 alt="<%= i.caption %>" /></a>
+	<% } %>
+	<!--<table id="item_table">
 		<tr>
 			<th>Caption</th>
 			<th>Price</th>
@@ -25,5 +27,5 @@
 	<% } %>
 	<% if (next_page !== null) { %>
 		<a href="<%= next_page %>">Next Page</a>
-	<% } %>
+	<% } %>-->
 </article>
